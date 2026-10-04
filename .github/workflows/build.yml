@@ -34,16 +34,11 @@ jobs:
           gomobile bind -o ../app/libs/libbox.aar \
             -target android/arm64,android/arm \
             -androidapi 21 \
-            -javapkg box .
+            .
           ls -la ../app/libs/
           # Extract classes.jar + .so from AAR (bypass Gradle AAR issues)
           cd ../app/libs
-          echo "=== AAR contents ==="
-          unzip -l libbox.aar
           unzip -o libbox.aar classes.jar
-          echo "=== classes.jar contents ==="
-          unzip -l classes.jar | head -40
-          ls -la classes.jar
           mkdir -p ../src/main/jniLibs
           unzip -o libbox.aar 'jni/*'
           cp -r jni/arm64-v8a jni/armeabi-v7a ../src/main/jniLibs/ 2>/dev/null || echo "jni copy issue"
