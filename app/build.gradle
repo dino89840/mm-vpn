@@ -14,21 +14,30 @@ android {
         versionName '1.0'
     }
 
+    // True when a valid release keystore is available (set via env in CI).
+    // Otherwise the release build falls back to debug signing so a testable
+    // APK can still be produced without secrets configured.
+    def hasReleaseKeystore = false
+
     signingConfigs {
         release {
             def ksPath = System.getenv('KEYSTORE_PATH')
             if (ksPath != null) {
-                storeFile = file(ksPath)
-                storePassword = System.getenv('KEYSTORE_PASSWORD')
-                keyAlias = System.getenv('KEY_ALIAS')
-                keyPassword = System.getenv('KEY_PASSWORD')
+                def ksFile = file(ksPath)
+                if (ksFile.exists() && ksFile.length() > 1024) {
+                    storeFile = ksFile
+                    storePassword = System.getenv('KEYSTORE_PASSWORD')
+                    keyAlias = System.getenv('KEY_ALIAS')
+                    keyPassword = System.getenv('KEY_PASSWORD')
+                    hasReleaseKeystore = true
+                }
             }
         }
     }
 
     buildTypes {
         release {
-            signingConfig signingConfigs.release
+            signingConfig = hasReleaseKeystore ? signingConfigs.release : signingConfigs.debug
             minifyEnabled false
         }
         debug {
