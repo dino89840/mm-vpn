@@ -31,7 +31,7 @@ jobs:
           go mod download
           mkdir -p ../app/libs
           gomobile bind -o ../app/libs/libbox.aar \
-            -target android/arm64,android/armv7 \
+            -target android/arm64,android/arm \
             -javapkg box .
           ls -la ../app/libs/
 
