@@ -38,12 +38,17 @@ jobs:
           ls -la ../app/libs/
           # Extract classes.jar + .so from AAR (bypass Gradle AAR issues)
           cd ../app/libs
+          echo "=== AAR contents ==="
+          unzip -l libbox.aar
           unzip -o libbox.aar classes.jar
+          echo "=== classes.jar contents ==="
+          unzip -l classes.jar | head -40
+          ls -la classes.jar
           mkdir -p ../src/main/jniLibs
           unzip -o libbox.aar 'jni/*'
-          cp -r jni/arm64-v8a jni/armeabi-v7a ../src/main/jniLibs/
+          cp -r jni/arm64-v8a jni/armeabi-v7a ../src/main/jniLibs/ 2>/dev/null || echo "jni copy issue"
           rm -rf jni
-          ls ../src/main/jniLibs/arm64-v8a/ ../src/main/jniLibs/armeabi-v7a/
+          ls ../src/main/jniLibs/arm64-v8a/ ../src/main/jniLibs/armeabi-v7a/ 2>/dev/null || echo "jniLibs empty!"
 
       - name: Decode keystore
         env:
