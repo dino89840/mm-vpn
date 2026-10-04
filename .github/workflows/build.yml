@@ -33,6 +33,7 @@ jobs:
           mkdir -p ../app/libs
           gomobile bind -o ../app/libs/libbox.aar \
             -target android/arm64,android/arm \
+            -androidapi 21 \
             -javapkg box .
           ls -la ../app/libs/
 
