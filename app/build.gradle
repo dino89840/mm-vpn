@@ -45,6 +45,7 @@ android {
 dependencies {
     implementation 'androidx.appcompat:appcompat:1.7.0'
     implementation 'com.google.android.material:material:1.12.0'
-    // libbox.aar is built by CI into app/libs (libbox/build_aar.sh)
-    implementation fileTree(dir: 'libs', include: ['*.aar'])
+    // classes.jar extracted from libbox.aar by CI (see workflow)
+    // native .so files go to src/main/jniLibs (auto-packaged by AGP)
+    implementation files('libs/classes.jar')
 }
