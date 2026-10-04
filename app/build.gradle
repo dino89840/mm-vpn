@@ -1,50 +1,50 @@
 plugins {
-    id("com.android.application")
+    id 'com.android.application'
 }
 
 android {
-    namespace = "com.mmvpn"
-    compileSdk = 34
+    namespace 'com.mmvpn'
+    compileSdk 34
 
     defaultConfig {
-        applicationId = "com.mmvpn"
-        minSdk = 26
-        targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
+        applicationId 'com.mmvpn'
+        minSdk 26
+        targetSdk 34
+        versionCode 1
+        versionName '1.0'
     }
 
     signingConfigs {
-        create("release") {
-            val ksPath = System.getenv("KEYSTORE_PATH")
+        release {
+            def ksPath = System.getenv('KEYSTORE_PATH')
             if (ksPath != null) {
                 storeFile = file(ksPath)
-                storePassword = System.getenv("KEYSTORE_PASSWORD")
-                keyAlias = System.getenv("KEY_ALIAS")
-                keyPassword = System.getenv("KEY_PASSWORD")
+                storePassword = System.getenv('KEYSTORE_PASSWORD')
+                keyAlias = System.getenv('KEY_ALIAS')
+                keyPassword = System.getenv('KEY_PASSWORD')
             }
         }
     }
 
     buildTypes {
-        getByName("release") {
-            signingConfig = signingConfigs.getByName("release")
-            isMinifyEnabled = false
+        release {
+            signingConfig signingConfigs.release
+            minifyEnabled false
         }
-        getByName("debug") {
-            applicationIdSuffix = ".debug"
+        debug {
+            applicationIdSuffix '.debug'
         }
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
 }
 
 dependencies {
-    implementation("androidx.appcompat:appcompat:1.7.0")
-    implementation("com.google.android.material:material:1.12.0")
+    implementation 'androidx.appcompat:appcompat:1.7.0'
+    implementation 'com.google.android.material:material:1.12.0'
     // libbox.aar is placed in app/libs by CI (libbox/build_aar.sh)
-    implementation(name = "libbox", ext = "aar")
+    implementation(name: 'libbox', ext: 'aar')
 }
