@@ -17,18 +17,6 @@ public class SingBoxManager {
 
         root.put("log", new JSONObject().put("level", "warn"));
 
-        // --- DNS: everything through the proxy ---
-        JSONObject dns = new JSONObject();
-        JSONArray servers = new JSONArray();
-        servers.put(new JSONObject()
-                .put("tag", "remote")
-                .put("address", "https://1.1.1.1/dns-query")
-                .put("detour", "proxy"));
-        dns.put("servers", servers);
-        dns.put("final", "remote");
-        dns.put("strategy", "ipv4_only");
-        root.put("dns", dns);
-
         // --- TUN inbound (fd comes from VpnService via box.OpenTun) ---
         JSONObject tun = new JSONObject();
         tun.put("type", "tun");
@@ -38,21 +26,15 @@ public class SingBoxManager {
         tun.put("strict_route", false);
         root.put("inbounds", new JSONArray().put(tun));
 
-        // --- outbounds ---
+        // --- outbounds: just the proxy. All traffic (including DNS) goes
+        // through it. No separate DNS config — simpler and more robust.
         JSONArray outbounds = new JSONArray();
         outbounds.put(buildProxyOutbound(c));
-        outbounds.put(new JSONObject()
-                .put("type", "dns")
-                .put("tag", "dns-out"));
         root.put("outbounds", outbounds);
 
-        // --- route ---
+        // --- route: everything to proxy ---
         JSONObject route = new JSONObject();
-        JSONArray rules = new JSONArray();
-        rules.put(new JSONObject()
-                .put("protocol", "dns")
-                .put("outbound", "dns-out"));
-        route.put("rules", rules);
+        route.put("rules", new JSONArray());
         route.put("final", "proxy");
         route.put("auto_detect_interface", true);
         root.put("route", route);
