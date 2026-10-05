@@ -25,6 +25,7 @@ jobs:
       - name: Build libbox.aar (gomobile)
         run: |
           export PATH="$PATH:$(go env GOPATH)/bin"
+          export GOFLAGS="-tags=with_clash_api,with_utls,with_gvisor"
           go install golang.org/x/mobile/cmd/gomobile@latest
           gomobile init
           cd libbox
