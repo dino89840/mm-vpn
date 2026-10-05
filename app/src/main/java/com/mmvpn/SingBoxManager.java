@@ -107,8 +107,12 @@ public class SingBoxManager {
         JSONObject t = new JSONObject();
         t.put("enabled", true);
         t.put("server_name", c.sni.isEmpty() ? c.address : c.sni);
-        // NOTE: uTLS fingerprinting is disabled — the bundled sing-box was
-        // built without the with_utls tag. Plain TLS works with most servers.
+        if (!"reality".equalsIgnoreCase(c.security)) {
+            JSONObject utls = new JSONObject();
+            utls.put("enabled", true);
+            utls.put("fingerprint", "chrome");
+            t.put("utls", utls);
+        }
         // NOTE: REALITY needs public_key/short_id which share links don't
         // carry — v1 supports TLS only; REALITY links will fail to connect.
         o.put("tls", t);
