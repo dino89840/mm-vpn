@@ -7,8 +7,11 @@ import android.app.PendingIntent;
 import android.content.Intent;
 import android.net.VpnService;
 import android.os.Build;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.ParcelFileDescriptor;
 import android.util.Log;
+import android.widget.Toast;
 
 /**
  * Owns the TUN interface and the sing-box instance.
@@ -24,6 +27,7 @@ public class MMVpnService extends VpnService {
 
     public static volatile boolean running = false;
     public static volatile String runningServerName = "";
+    public static volatile String lastError = "";
 
     private ParcelFileDescriptor tunPfd;
     private int tunFd = -1;
@@ -40,11 +44,13 @@ public class MMVpnService extends VpnService {
             return START_NOT_STICKY;
         }
         if (ACTION_CONNECT.equals(action)) {
+            // Go foreground IMMEDIATELY — Android kills services that don't
+            // call startForeground() within a few seconds.
+            startForegroundWithNotification("Connecting...", "Starting VPN");
             String serverId = intent.getStringExtra(EXTRA_SERVER_ID);
             ServerConfig cfg = findServer(serverId);
             if (cfg == null) {
-                Log.e(TAG, "server not found: " + serverId);
-                stopSelf();
+                fail("server not found");
                 return START_NOT_STICKY;
             }
             startVpn(cfg);
@@ -54,6 +60,7 @@ public class MMVpnService extends VpnService {
     }
 
     private ServerConfig findServer(String id) {
+        if (id == null) return null;
         for (ServerConfig c : new ServerStore(this).all()) {
             if (c.id.equals(id)) return c;
         }
@@ -62,6 +69,7 @@ public class MMVpnService extends VpnService {
 
     private void startVpn(ServerConfig cfg) {
         if (running) stopVpn();
+        lastError = "";
         worker = new Thread(() -> {
             try {
                 // 1. TUN via VpnService.Builder
@@ -78,6 +86,7 @@ public class MMVpnService extends VpnService {
 
                 // 2. sing-box config + start (in-process via libbox)
                 String configJson = SingBoxManager.buildConfig(cfg);
+                Log.i(TAG, "config built, starting box...");
                 box.Protector protector = fd -> {
                     // called by sing-box for every dialed socket: bypass VPN
                     boolean ok = MMVpnService.this.protect(fd);
@@ -87,14 +96,30 @@ public class MMVpnService extends VpnService {
 
                 running = true;
                 runningServerName = cfg.name;
-                startForegroundWithNotification(cfg.name);
+                startForegroundWithNotification("MM VPN connected", cfg.name);
                 Log.i(TAG, "vpn started: " + cfg);
             } catch (Exception e) {
                 Log.e(TAG, "startVpn failed", e);
-                stopVpn();
+                fail(e.getClass().getSimpleName() + ": " + e.getMessage());
+            } catch (Throwable t) {
+                // native crashes / linkage errors land here
+                Log.e(TAG, "startVpn crashed", t);
+                fail(t.getClass().getSimpleName() + ": " + t.getMessage());
             }
         }, "mmvpn-starter");
         worker.start();
+    }
+
+    /** Record the failure, inform the user, and shut down cleanly. */
+    private void fail(String reason) {
+        lastError = reason != null ? reason : "unknown error";
+        Log.e(TAG, "vpn failed: " + lastError);
+        new Handler(Looper.getMainLooper()).post(() ->
+                Toast.makeText(getApplicationContext(),
+                        "VPN failed: " + lastError, Toast.LENGTH_LONG).show());
+        startForegroundWithNotification("MM VPN failed", lastError);
+        stopVpn();
+        stopSelf();
     }
 
     private void stopVpn() {
@@ -132,7 +157,7 @@ public class MMVpnService extends VpnService {
         super.onRevoke();
     }
 
-    private void startForegroundWithNotification(String serverName) {
+    private void startForegroundWithNotification(String title, String text) {
         String chId = "mmvpn";
         NotificationManager nm = getSystemService(NotificationManager.class);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -143,8 +168,8 @@ public class MMVpnService extends VpnService {
         PendingIntent pi = PendingIntent.getActivity(
                 this, 0, i, PendingIntent.FLAG_IMMUTABLE);
         Notification n = new Notification.Builder(this, chId)
-                .setContentTitle("MM VPN connected")
-                .setContentText(serverName)
+                .setContentTitle(title)
+                .setContentText(text)
                 .setSmallIcon(android.R.drawable.ic_lock_lock)
                 .setContentIntent(pi)
                 .build();
