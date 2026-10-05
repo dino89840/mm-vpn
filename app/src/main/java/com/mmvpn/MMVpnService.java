@@ -87,6 +87,9 @@ public class MMVpnService extends VpnService {
                 // 2. sing-box config + start (in-process via libbox)
                 String configJson = SingBoxManager.buildConfig(cfg);
                 Log.i(TAG, "config built, starting box...");
+                // Tell sing-box where it may write (cache.db etc.)
+                String base = getFilesDir().getAbsolutePath();
+                box.Box.setup(base, base, getCacheDir().getAbsolutePath());
                 box.Protector protector = fd -> {
                     // called by sing-box for every dialed socket: bypass VPN
                     boolean ok = MMVpnService.this.protect(fd);
