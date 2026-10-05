@@ -127,6 +127,9 @@ public class MainActivity extends AppCompatActivity {
         if (MMVpnService.running) {
             statusView.setText("🟢 Connected: " + MMVpnService.runningServerName);
             connectBtn.setText("Disconnect");
+        } else if (!MMVpnService.lastError.isEmpty()) {
+            statusView.setText("🔴 Failed: " + MMVpnService.lastError);
+            connectBtn.setText("Connect");
         } else {
             statusView.setText("⚪ Disconnected");
             connectBtn.setText("Connect");
