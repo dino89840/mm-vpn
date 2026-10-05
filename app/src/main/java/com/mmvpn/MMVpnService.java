@@ -72,17 +72,38 @@ public class MMVpnService extends VpnService {
         lastError = "";
         worker = new Thread(() -> {
             try {
-                // 1. TUN via VpnService.Builder
                 Builder b = new Builder();
-                b.setSession("MM VPN");
-                b.setMtu(9000);
-                b.addAddress("172.19.0.1", 30);
-                b.addRoute("0.0.0.0", 0);
-                b.addDnsServer("1.1.1.1"); // placeholder; real DNS flows via tun
-                tunPfd = b.establish();
-                if (tunPfd == null) throw new Exception("establish() returned null");
-                tunFd = tunPfd.detachFd();
-                Log.i(TAG, "tun fd=" + tunFd);
+
+b.setSession("MM VPN");
+
+// Must match the sing-box TUN inbound configuration.
+b.setMtu(1500);
+b.addAddress("172.19.0.1", 30);
+
+// Capture all IPv4 traffic.
+b.addRoute("0.0.0.0", 0);
+
+// DNS requests also enter this TUN and are sent through the proxy.
+b.addDnsServer("1.1.1.1");
+
+if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+    b.setMetered(false);
+}
+
+tunPfd = b.establish();
+
+if (tunPfd == null) {
+    throw new Exception(
+            "VPN establish() returned null; permission may be revoked"
+    );
+}
+
+// libbox duplicates this fd internally in OpenTun.
+// This service keeps ownership of the original detached fd.
+tunFd = tunPfd.detachFd();
+
+Log.i(TAG, "tun established, fd=" + tunFd);
+
 
                 // 2. sing-box config + start (in-process via libbox)
                 String configJson = SingBoxManager.buildConfig(cfg);
