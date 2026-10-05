@@ -25,6 +25,17 @@ type BoxHandle struct {
 	service *libbox.BoxService
 }
 
+// Setup must be called once before Start. It tells sing-box where it may
+// write files (cache.db, etc.). Pass the app's getFilesDir() and
+// getCacheDir() from Java.
+func Setup(basePath string, workingPath string, tempPath string) error {
+	return libbox.Setup(&libbox.SetupOptions{
+		BasePath:    basePath,
+		WorkingPath: workingPath,
+		TempPath:    tempPath,
+	})
+}
+
 // Start launches sing-box with the given JSON config. tunFd is the raw fd
 // from VpnService.Builder.establish().detachFd(). Java keeps ownership of
 // the fd (we never close it here).
